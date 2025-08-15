@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Converter</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles can be added here if needed */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+
+    <!-- Main container for the converter -->
+    <div class="bg-gray-800 p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4">
+
+        <!-- Header Section -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-cyan-400">Temperature Converter</h1>
+            <p class="text-gray-400 mt-2">Convert between Celsius, Fahrenheit, and Kelvin.</p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="space-y-6">
+            <!-- Temperature Input Field -->
+            <div>
+                <label for="temperatureInput" class="block text-sm font-medium text-gray-300 mb-2">Enter Temperature</label>
+                <input type="number" id="temperatureInput" placeholder="e.g., 32" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition duration-200">
+            </div>
+
+            <!-- Unit Selection Dropdowns -->
+            <div class="flex items-center justify-between space-x-4">
+                <!-- "From" Unit -->
+                <div class="w-1/2">
+                    <label for="fromUnit" class="block text-sm font-medium text-gray-300 mb-2">From</label>
+                    <select id="fromUnit" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition duration-200">
+                        <option value="celsius">Celsius (°C)</option>
+                        <option value="fahrenheit" selected>Fahrenheit (°F)</option>
+                        <option value="kelvin">Kelvin (K)</option>
+                    </select>
+                </div>
+                <!-- "To" Unit -->
+                <div class="w-1/2">
+                    <label for="toUnit" class="block text-sm font-medium text-gray-300 mb-2">To</label>
+                    <select id="toUnit" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 outline-none transition duration-200">
+                        <option value="celsius" selected>Celsius (°C)</option>
+                        <option value="fahrenheit">Fahrenheit (°F)</option>
+                        <option value="kelvin">Kelvin (K)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Convert Button -->
+        <div class="mt-8">
+            <button id="convertBtn" class="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 shadow-lg">
+                Convert
+            </button>
+        </div>
+
+        <!-- Result and Error Display -->
+        <div id="resultArea" class="mt-8 text-center min-h-[60px] flex items-center justify-center bg-gray-900 rounded-lg p-4">
+             <!-- Error messages will be shown here -->
+            <p id="errorMsg" class="text-red-400 font-medium"></p>
+            <!-- Conversion results will be shown here -->
+            <p id="resultMsg" class="text-2xl font-semibold text-green-400"></p>
+        </div>
+
+    </div>
+
+    <script>
+        // Get references to the HTML elements
+        const temperatureInput = document.getElementById('temperatureInput');
+        const fromUnitSelect = document.getElementById('fromUnit');
+        const toUnitSelect = document.getElementById('toUnit');
+        const convertBtn = document.getElementById('convertBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const resultMsg = document.getElementById('resultMsg');
+
+        // --- Conversion Logic ---
+
+        /**
+         * Main function to handle the temperature conversion.
+         * It validates the input and calls the appropriate conversion function.
+         */
+        function handleConversion() {
+            // Clear previous results and errors
+            errorMsg.textContent = '';
+            resultMsg.textContent = '';
+
+            const tempValueStr = temperatureInput.value;
+            const fromUnit = fromUnitSelect.value;
+            const toUnit = toUnitSelect.value;
+
+            // 1. Validate that the input is not empty
+            if (tempValueStr === '') {
+                errorMsg.textContent = 'Please enter a temperature value.';
+                return;
+            }
+
+            // 2. Validate that the input is a valid number
+            const tempValue = parseFloat(tempValueStr);
+            if (isNaN(tempValue)) {
+                errorMsg.textContent = 'Invalid input. Please enter a number.';
+                return;
+            }
+            
+            // 3. If "from" and "to" units are the same, no conversion is needed
+            if (fromUnit === toUnit) {
+                 resultMsg.textContent = `${tempValue.toFixed(2)} ${getUnitSymbol(toUnit)}`;
+                 return;
+            }
+
+            // 4. Perform the conversion
+            let result;
+            if (fromUnit === 'celsius') {
+                result = convertFromCelsius(tempValue, toUnit);
+            } else if (fromUnit === 'fahrenheit') {
+                result = convertFromFahrenheit(tempValue, toUnit);
+            } else if (fromUnit === 'kelvin') {
+                result = convertFromKelvin(tempValue, toUnit);
+            }
+
+            // 5. Display the result
+            if (result !== undefined) {
+                // Format the result to two decimal places
+                const formattedResult = result.toFixed(2);
+                resultMsg.textContent = `${formattedResult} ${getUnitSymbol(toUnit)}`;
+            } else {
+                // This case should not happen with the current logic, but it's good practice
+                errorMsg.textContent = 'An unexpected error occurred.';
+            }
+        }
+        
+        /**
+         * Converts a temperature from Celsius to Fahrenheit or Kelvin.
+         * @param {number} celsius - The temperature in Celsius.
+         * @param {string} toUnit - The target unit ('fahrenheit' or 'kelvin').
+         * @returns {number} The converted temperature.
+         */
+        function convertFromCelsius(celsius, toUnit) {
+            if (toUnit === 'fahrenheit') {
+                return (celsius * 9/5) + 32;
+            }
+            if (toUnit === 'kelvin') {
+                return celsius + 273.15;
+            }
+        }
+
+        /**
+         * Converts a temperature from Fahrenheit to Celsius or Kelvin.
+         * @param {number} fahrenheit - The temperature in Fahrenheit.
+         * @param {string} toUnit - The target unit ('celsius' or 'kelvin').
+         * @returns {number} The converted temperature.
+         */
+        function convertFromFahrenheit(fahrenheit, toUnit) {
+            if (toUnit === 'celsius') {
+                return (fahrenheit - 32) * 5/9;
+            }
+            if (toUnit === 'kelvin') {
+                return (fahrenheit - 32) * 5/9 + 273.15;
+            }
+        }
+
+        /**
+         * Converts a temperature from Kelvin to Celsius or Fahrenheit.
+         * @param {number} kelvin - The temperature in Kelvin.
+         * @param {string} toUnit - The target unit ('celsius' or 'fahrenheit').
+         * @returns {number} The converted temperature.
+         */
+        function convertFromKelvin(kelvin, toUnit) {
+            if (toUnit === 'celsius') {
+                return kelvin - 273.15;
+            }
+            if (toUnit === 'fahrenheit') {
+                return (kelvin - 273.15) * 9/5 + 32;
+            }
+        }
+        
+        /**
+         * Returns the symbol for a given temperature unit.
+         * @param {string} unit - The unit ('celsius', 'fahrenheit', or 'kelvin').
+         * @returns {string} The corresponding symbol.
+         */
+        function getUnitSymbol(unit) {
+            switch(unit) {
+                case 'celsius': return '°C';
+                case 'fahrenheit': return '°F';
+                case 'kelvin': return 'K';
+                default: return '';
+            }
+        }
+
+        // --- Event Listeners ---
+        
+        // Add a click event listener to the convert button
+        convertBtn.addEventListener('click', handleConversion);
+        
+        // Optional: Allow conversion by pressing 'Enter' in the input field
+        temperatureInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                handleConversion();
+            }
+        });
+
+    </script>
+</body>
+</html>
